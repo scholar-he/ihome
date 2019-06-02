@@ -8,6 +8,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import CSRFProtect
 from config import config_map
 from logging.handlers import RotatingFileHandler
+from ihome.utils.commons import ReConverter
 
 
 # 数据库
@@ -39,10 +40,9 @@ def create_app(config_name):
     :param config_name: str 配置模式的名字 （"develop", "product"）
     :return:
     """
-
     app = Flask(__name__)
     # 根据配置模式获取配置参数的类
-    config_class = config_map[config_name]
+    config_class = config_map.get(config_name)
     app.config.from_object(config_class)
     # 使用app初始化db
     db.init_app(app)
@@ -56,8 +56,15 @@ def create_app(config_name):
     # 初始化csrf
     csrf.init_app(app)
 
+    # 为flask添加自定义的转化器
+    app.url_map.converters["re"] = ReConverter
+
     # 注册蓝图
     from ihome import api_1_0
     app.register_blueprint(api_1_0.api, url_prefix="/api/v1.0")
+
+    # 注册提供静态文件的蓝图
+    from ihome import web_html
+    app.register_blueprint(web_html.html)
 
     return app
